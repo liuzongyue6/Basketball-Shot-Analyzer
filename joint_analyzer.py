@@ -7,6 +7,10 @@ from datetime import datetime
 import os
 from scipy.signal import savgol_filter
 
+# 设置中文字体支持
+plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
+plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
+
 class SimpleJointAnalyzer:
     """
     Comprehensive biomechanical analyzer for sports movements.
@@ -60,11 +64,16 @@ class SimpleJointAnalyzer:
             'marker_size': 8,
             'figure_size': (15, 8),
             'dpi': 600,
-            'grid': False,  # 去除网格线
+            'grid': True,  # 启用网格线
             'colors': {
                 'ankle_avg': 'green',
                 'knee_avg': 'blue', 
                 'hip_avg': 'red'
+            },
+            'chinese_labels': {
+                'hip_avg': '髋关节',
+                'knee_avg': '膝关节',
+                'ankle_avg': '踝关节'
             }
         }
     
@@ -81,8 +90,9 @@ class SimpleJointAnalyzer:
         # 设置刻度字体大小
         ax.tick_params(axis='both', which='major', labelsize=self.plot_config['font_size']['tick'])
         
-        # 设置网格
-        ax.grid(self.plot_config['grid'])
+        # 设置网格 - 只在x轴显示虚线网格
+        if self.plot_config['grid']:
+            ax.grid(True, axis='x', linestyle='--', alpha=0.7, linewidth=1)
         
         # 设置图例字体大小
         legend = ax.get_legend()
@@ -286,11 +296,13 @@ class SimpleJointAnalyzer:
         
         for name, values in data_dict.items():
             color = self.plot_config['colors'].get(name, 'black')
+            # 使用中文标签
+            label = self.plot_config['chinese_labels'].get(name, name.replace('_', ' ').title())
             ax.plot(time_axis, values, color=color, 
-                   label=name.replace('_', ' ').title(), 
+                   label=label, 
                    linewidth=self.plot_config['line_width'])
         
-        self._apply_plot_style(ax, title=title, xlabel='Time (s)', ylabel=ylabel)
+        self._apply_plot_style(ax, title=title, xlabel='时间 (秒)', ylabel=ylabel)
         ax.legend(fontsize=self.plot_config['font_size']['legend'])
         
         # 设置轴范围
@@ -304,16 +316,16 @@ class SimpleJointAnalyzer:
         if show_plot: plt.show()
 
     def plot_joint_angles(self, save_path=None, show_plot=True):
-         self._plot_template(self.output_data['angle'], 'Average Joint Angles Over Time', 'Angle (degrees)', save_path, show_plot)
+         self._plot_template(self.output_data['angle'], '平均关节角度随时间变化', '角度 (度)', save_path, show_plot)
 
     def plot_joint_accelerations(self, save_path=None, show_plot=True):
-        self._plot_template(self.output_data['acceleration'], 'Average Joint Angular Acceleration', 'Acceleration (degrees/s^2)', save_path, show_plot)
+        self._plot_template(self.output_data['acceleration'], '平均关节角加速度', '加速度 (度/秒^2)', save_path, show_plot)
 
     def plot_joint_jerks(self, save_path=None, show_plot=True):
         # 计算视频总时长
         total_time = self.frame_count / self.fps
         # Average Joint Angular Jerk (Smoothness): x 0到总时长, y -200000 - 200000
-        self._plot_template(self.output_data['jerk'], 'Average Joint Angular Jerk (Smoothness)', 'Jerk (degrees/s^3)', save_path, show_plot, xlim=(0, total_time), ylim=(-200000, 200000))
+        self._plot_template(self.output_data['jerk'], '平均关节角急动度 (平滑性)', '急动度 (度/秒^3)', save_path, show_plot, xlim=(0, total_time), ylim=(-200000, 200000))
 
     def plot_kinetic_chain_timing(self, save_path=None, show_plot=True):
         chain_joints = ['hip_avg', 'knee_avg', 'ankle_avg']
@@ -329,14 +341,16 @@ class SimpleJointAnalyzer:
         for name, values in data_to_plot.items():
             normalized_values = values / np.nanmax(np.abs(values))
             color = self.plot_config['colors'].get(name, 'black')
+            # 使用中文标签
+            label = self.plot_config['chinese_labels'].get(name, name.replace('_', ' ').title())
             ax.plot(time_axis, normalized_values, color=color, 
-                   label=f"{name.replace('_', ' ').title()} (Normalized)",
+                   label=label,
                    linewidth=self.plot_config['line_width'])
         
         self._apply_plot_style(ax, 
-                             title='Kinetic Chain Timing (Normalized Angular Velocity)', 
-                             xlabel='Time (s)', 
-                             ylabel='Normalized Angular Velocity')
+                             title='动力链时序 (归一化角速度)', 
+                             xlabel='时间 (秒)', 
+                             ylabel='归一化角速度')
         ax.legend(fontsize=self.plot_config['font_size']['legend'])
         
         # Kinetic Chain Timing: x 0到总时长, y -1.5 - 1.5
@@ -351,7 +365,7 @@ class SimpleJointAnalyzer:
         joints_to_plot = self.output_data['angle'].keys()
         num_joints = len(joints_to_plot)
         fig, axes = plt.subplots(1, num_joints, figsize=(5 * num_joints, 5), squeeze=False)
-        fig.suptitle('Joint Phase Portraits (Velocity vs. Angle)', 
+        fig.suptitle('关节相位图 (速度 vs 角度)', 
                     fontsize=self.plot_config['font_size']['title'], fontweight='bold')
         
         for i, name in enumerate(joints_to_plot):
@@ -362,14 +376,16 @@ class SimpleJointAnalyzer:
             
             ax.plot(angle_data, velocity_data, color=color, linewidth=self.plot_config['line_width'])
             ax.plot(angle_data[0], velocity_data[0], 'go', 
-                   ms=self.plot_config['marker_size'], label='Start')
+                   ms=self.plot_config['marker_size'], label='开始')
             ax.plot(angle_data[-1], velocity_data[-1], 'rs', 
-                   ms=self.plot_config['marker_size'], label='End')
+                   ms=self.plot_config['marker_size'], label='结束')
             
+            # 使用中文标签
+            title = self.plot_config['chinese_labels'].get(name, name.replace('_', ' ').title())
             self._apply_plot_style(ax, 
-                                 title=name.replace('_', ' ').title(), 
-                                 xlabel='Angle (degrees)', 
-                                 ylabel='Angular Velocity (deg/s)')
+                                 title=title, 
+                                 xlabel='角度 (度)', 
+                                 ylabel='角速度 (度/秒)')
             ax.legend(fontsize=self.plot_config['font_size']['legend'])
             
             # Joint Phase Portraits: x 50 - 180, y -400 - 600
@@ -403,11 +419,13 @@ class SimpleJointAnalyzer:
                 peak_time = time_axis[peak_idx]  # 使用真实时间
                 peak_value = values[peak_idx]
                 color = self.plot_config['colors'].get(name, 'black')
-                peaks_info.append({'name': name, 'time': peak_time, 'value': peak_value, 'color': color})
+                # 使用中文标签
+                label = self.plot_config['chinese_labels'].get(name, name.replace('_', ' ').title())
+                peaks_info.append({'name': name, 'label': label, 'time': peak_time, 'value': peak_value, 'color': color})
                 
                 # Plot the full data curve
                 ax.plot(time_axis, values, color=color, alpha=0.5, 
-                       label=name.replace('_', ' ').title(),
+                       label=label,
                        linewidth=self.plot_config['line_width'])
 
         if not peaks_info: print(f"No valid peaks found for {data_type} plot."); return
@@ -415,29 +433,12 @@ class SimpleJointAnalyzer:
         # Sort peaks by time to establish the sequence
         peaks_info.sort(key=lambda p: p['time'])
         
-        # Use hip as the reference time (t=0 for the sequence)
-        hip_peak = next((p for p in peaks_info if p['name'] == 'hip_avg'), None)
-        ref_time = hip_peak['time'] if hip_peak else peaks_info[0]['time']
-
-        # 减少等号线的数量
-        summary_text = "Peak Sequence & Timing (rel. to Hip):\n" + "="*15 + "\n"
-        
+        # Mark each peak on the plot (不添加文本框)
         for peak in peaks_info:
-            # Mark each peak on the plot
             ax.plot(peak['time'], peak['value'], 'o', color=peak['color'], 
                    markersize=self.plot_config['marker_size'], markeredgecolor='black')
-            
-            # Build the summary text
-            delta_t = peak['time'] - ref_time
-            summary_text += f"- {peak['name'].replace('_', ' ').title():<12}: {delta_t:+.3f} s\n"
-            
-        # Add the summary text box to the plot with smaller font
-        ax.text(0.02, 0.98, summary_text, transform=ax.transAxes, 
-               fontsize=self.plot_config['font_size']['text'] - 6,  # 减小字体
-               verticalalignment='top', 
-               bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
 
-        self._apply_plot_style(ax, title=title, xlabel='Time (s)', ylabel=ylabel)
+        self._apply_plot_style(ax, title=title, xlabel='时间 (秒)', ylabel=ylabel)
         ax.legend(loc='lower right', fontsize=self.plot_config['font_size']['legend'])
         
         # 设置不同的y轴范围，x轴使用真实时间
@@ -457,11 +458,11 @@ class SimpleJointAnalyzer:
 
     def plot_peak_angle_timing(self, save_path=None, show_plot=True):
         """Public method to plot the timing of peak angles."""
-        self._plot_peak_timing('angle', 'Peak Angle Timing and Sequence', 'Angle (degrees)', save_path, show_plot)
+        self._plot_peak_timing('angle', '峰值角度时序', '角度 (度)', save_path, show_plot)
 
     def plot_peak_acceleration_timing(self, save_path=None, show_plot=True):
         """Public method to plot the timing of peak accelerations."""
-        self._plot_peak_timing('acceleration', 'Peak Acceleration Timing and Sequence', 'Acceleration (degrees/s^2)', save_path, show_plot)
+        self._plot_peak_timing('acceleration', '峰值加速度时序', '加速度 (度/秒^2)', save_path, show_plot)
 
     def plot_center_of_gravity_trajectory(self, save_path=None, show_plot=True):
         """Plot center of gravity trajectory (2D path) with normalized axes."""
@@ -474,14 +475,14 @@ class SimpleJointAnalyzer:
         ax.plot(self.cog_data['x'], self.cog_data['y'], 'g-', 
                 linewidth=self.plot_config['line_width'], alpha=0.7)
         ax.scatter(self.cog_data['x'][0], self.cog_data['y'][0], color='green', 
-                   s=100, label='Start', zorder=5)
+                   s=100, label='开始', zorder=5)
         ax.scatter(self.cog_data['x'][-1], self.cog_data['y'][-1], color='red', 
-                   s=100, label='End', zorder=5)
+                   s=100, label='结束', zorder=5)
         
         self._apply_plot_style(ax,
-                             title='Center of Gravity Trajectory (2D Path)',
-                             xlabel='X Position (normalized)',
-                             ylabel='Y Position (normalized)')
+                             title='重心轨迹 (2D路径)',
+                             xlabel='X位置 (归一化)',
+                             ylabel='Y位置 (归一化)')
         ax.legend(fontsize=self.plot_config['font_size']['legend'])
         
         # 根据实际数据范围动态设置坐标轴范围
@@ -554,13 +555,14 @@ class SimpleJointAnalyzer:
         fig, ax = self._setup_figure()
         
         # Plot CoG acceleration magnitude
+        # Plot CoG acceleration magnitude
         ax.plot(time_axis, self.cog_data['acceleration_magnitude'], 'orange', 
                 linewidth=self.plot_config['line_width'])
         
         self._apply_plot_style(ax,
-                             title='Center of Gravity Acceleration Magnitude Over Time',
-                             xlabel='Time (s)',
-                             ylabel='Acceleration Magnitude (normalized units/s²)')
+                             title='重心加速度幅度随时间变化',
+                             xlabel='时间 (秒)',
+                             ylabel='加速度幅度 (归一化单位/秒^2)')
         
         # Center of Gravity Acceleration Magnitude: x 0到总时长, y 0-15
         ax.set_xlim(0, 1.0)
@@ -631,7 +633,7 @@ def main():
     analyzer = SimpleJointAnalyzer()
     
     # --- IMPORTANT: CHANGE THIS PATH TO YOUR VIDEO FILE ---
-    video_path = "E:/Basketball/for_CSCD_publication/bad-shot-2-simplified.mp4" 
+    video_path = "E:/Basketball/for_CSCD_publication/lunge-shot-1-simplified.mp4" 
     
     if not os.path.exists(video_path):
         print(f"ERROR: Video file not found at '{video_path}'"); return

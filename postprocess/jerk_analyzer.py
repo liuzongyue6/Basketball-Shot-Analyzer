@@ -21,8 +21,8 @@ class JerkProcessor:
         """
         self.jerk_ref = jerk_ref
         self.mapping_type = mapping_type
-        # 设置matplotlib统一字体
-        plt.rcParams['font.family'] = 'Arial'
+        # 设置matplotlib统一字体支持中文
+        plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
         plt.rcParams['font.size'] = 20
         plt.rcParams['axes.unicode_minus'] = False
     
@@ -422,28 +422,28 @@ class JerkProcessor:
             # 检查是否有时间列
             if 'time_seconds' in df.columns:
                 time_data = df['time_seconds'].values
-                x_label = 'Time (seconds)'
+                x_label = '时间 (秒)'
             elif 'frame' in df.columns:
                 time_data = df['frame'].values
-                x_label = 'Frame Number'
+                x_label = '帧数'
             else:
                 # 如果没有时间列，使用索引
                 time_data = np.arange(len(jerk_x))
-                x_label = 'Data Point Index'
+                x_label = '数据点索引'
             
             # 创建图形，增大图形尺寸
             plt.figure(figsize=(14, 10))
             
             # 绘制cog_jerk_x和cog_jerk_y，增加线条粗细
-            plt.plot(time_data, jerk_x, label='CoG Jerk X', color='blue', linewidth=3, alpha=0.8)
-            plt.plot(time_data, jerk_y, label='CoG Jerk Y', color='red', linewidth=3, alpha=0.8)
+            plt.plot(time_data, jerk_x, label='重心急动度 X', color='blue', linewidth=3, alpha=0.8)
+            plt.plot(time_data, jerk_y, label='重心急动度 Y', color='red', linewidth=3, alpha=0.8)
             
             # 设置图形属性，统一字体大小
             plt.xlabel(x_label, fontweight='bold')
-            plt.ylabel('Jerk(deg/s^3)', fontweight='bold')
-            plt.title('CoG Jerk (X and Y Components)', fontweight='bold', pad=20)
+            plt.ylabel('急动度 (度/秒^3)', fontweight='bold')
+            plt.title('重心急动度 (X和Y分量)', fontweight='bold', pad=20)
             plt.legend(loc='upper right')
-            plt.grid(True, alpha=0.3)
+            plt.grid(True, axis='x', linestyle='--', alpha=0.7, linewidth=1)
             
             # 自动调整布局
             plt.tight_layout()
@@ -519,7 +519,7 @@ def main():
     主函数：处理指定文件夹中的CSV文件
     """
     # 指定文件夹路径
-    folder_path = r"E:\Basketball\for_CSCD_publication\bad-shot-2-simplified_plot_graph_20250906_213609"
+    folder_path = r"E:\Basketball\for_CSCD_publication\good-shot-3_plot_graph_20250904_172751"
     
     # 创建处理器实例
     processor = JerkProcessor(jerk_ref=120.0, mapping_type="sigmoid")

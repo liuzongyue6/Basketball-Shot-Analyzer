@@ -4,9 +4,12 @@ import seaborn as sns
 from scipy import stats
 import os
 
-# 设置全局字体大小
-plt.rcParams.update({'font.size': 14})  # 设置全局字体大小
 sns.set_style("whitegrid")  # 设置seaborn样式
+# 设置全局字体大小和中文支持
+plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
+plt.rcParams['axes.unicode_minus'] = False
+plt.rcParams.update({'font.size': 20})  # 设置全局字体大小
+
 
 # 加载数据集
 csv_file_path = r'E:\Basketball\for_CSCD_publication\shooting_training_data.csv'
@@ -21,6 +24,18 @@ group_b = df[df['Group'] == 'B']
 
 # --- 可视化 ---
 
+# 计算CGSS和KCSS的统一y轴范围
+cgss_min = df['CGSS_Improvement'].min()
+cgss_max = df['CGSS_Improvement'].max()
+kcss_min = df['KCSS_Improvement'].min()
+kcss_max = df['KCSS_Improvement'].max()
+
+# 统一y轴范围：取两者的最小值和最大值
+y_min = min(cgss_min, kcss_min)
+y_max = max(cgss_max, kcss_max)
+y_padding = (y_max - y_min) * 0.1  # 添加10%的边距
+y_lim = [y_min - y_padding, y_max + y_padding]
+
 # 设置图像大小
 plt.figure(figsize=(16, 8))  # 增大图像尺寸
 
@@ -28,19 +43,21 @@ plt.figure(figsize=(16, 8))  # 增大图像尺寸
 plt.subplot(1, 2, 1)
 sns.boxplot(x='Group', y='CGSS_Improvement', data=df)
 sns.stripplot(x='Group', y='CGSS_Improvement', data=df, jitter=True, color='black', size=6, alpha=0.5)
-plt.title('CGSS Improvement Comparison between Group A and Group B', fontsize=16)  # 增大标题字体
-plt.xlabel('Group', fontsize=14)  # 增大x轴标签字体
-plt.ylabel('CGSS Improvement', fontsize=14)  # 增大y轴标签字体
+plt.title('A组和B组CGSS改善对比', fontsize=16)  # 增大标题字体
+plt.xlabel('组别', fontsize=14)  # 增大x轴标签字体
+plt.ylabel('CGSS改善值', fontsize=14)  # 增大y轴标签字体
 plt.tick_params(axis='both', which='major', labelsize=12)  # 增大刻度标签字体
+plt.ylim(y_lim)  # 设置统一的y轴范围
 
 # KCSS_Improvement 的箱形图和散点图
 plt.subplot(1, 2, 2)
 sns.boxplot(x='Group', y='KCSS_Improvement', data=df)
 sns.stripplot(x='Group', y='KCSS_Improvement', data=df, jitter=True, color='black', size=6, alpha=0.5)
-plt.title('KCSS Improvement Comparison between Group A and Group B', fontsize=16)  # 增大标题字体
-plt.xlabel('Group', fontsize=14)  # 增大x轴标签字体
-plt.ylabel('KCSS Improvement', fontsize=14)  # 增大y轴标签字体
+plt.title('A组和B组KCSS改善对比', fontsize=16)  # 增大标题字体
+plt.xlabel('组别', fontsize=14)  # 增大x轴标签字体
+plt.ylabel('KCSS改善值', fontsize=14)  # 增大y轴标签字体
 plt.tick_params(axis='both', which='major', labelsize=12)  # 增大刻度标签字体
+plt.ylim(y_lim)  # 设置统一的y轴范围
 
 plt.tight_layout()
 # 将图片保存到CSV文件所在的文件夹
@@ -55,19 +72,21 @@ plt.figure(figsize=(16, 8))  # 增大图像尺寸
 plt.subplot(1, 2, 1)
 sns.violinplot(x='Group', y='CGSS_Improvement', data=df, inner='quartile')
 sns.stripplot(x='Group', y='CGSS_Improvement', data=df, jitter=True, color='black', size=6, alpha=0.5)
-plt.title('CGSS Improvement Distribution in Group A vs Group B', fontsize=16)  # 增大标题字体
-plt.xlabel('Group', fontsize=14)  # 增大x轴标签字体
-plt.ylabel('CGSS Improvement', fontsize=14)  # 增大y轴标签字体
+plt.title('A组与B组CGSS改善分布', fontsize=16)  # 增大标题字体
+plt.xlabel('组别', fontsize=14)  # 增大x轴标签字体
+plt.ylabel('CGSS改善值', fontsize=14)  # 增大y轴标签字体
 plt.tick_params(axis='both', which='major', labelsize=12)  # 增大刻度标签字体
+plt.ylim(y_lim)  # 设置统一的y轴范围
 
 # KCSS_Improvement 的小提琴图
 plt.subplot(1, 2, 2)
 sns.violinplot(x='Group', y='KCSS_Improvement', data=df, inner='quartile')
 sns.stripplot(x='Group', y='KCSS_Improvement', data=df, jitter=True, color='black', size=6, alpha=0.5)
-plt.title('KCSS Improvement Distribution in Group A vs Group B', fontsize=16)  # 增大标题字体
-plt.xlabel('Group', fontsize=14)  # 增大x轴标签字体
-plt.ylabel('KCSS Improvement', fontsize=14)  # 增大y轴标签字体
+plt.title('A组与B组KCSS改善分布', fontsize=16)  # 增大标题字体
+plt.xlabel('组别', fontsize=14)  # 增大x轴标签字体
+plt.ylabel('KCSS改善值', fontsize=14)  # 增大y轴标签字体
 plt.tick_params(axis='both', which='major', labelsize=12)  # 增大刻度标签字体
+plt.ylim(y_lim)  # 设置统一的y轴范围
 
 plt.tight_layout()
 # 将图片保存到CSV文件所在的文件夹
