@@ -1,3 +1,4 @@
+import argparse
 import pandas as pd
 import numpy as np
 import os
@@ -518,11 +519,17 @@ def main():
     """
     主函数：处理指定文件夹中的CSV文件
     """
-    # 指定文件夹路径
-    folder_path = r"E:\Basketball\for_CSCD_publication\good-shot-3_plot_graph_20250904_172751"
-    
+    parser = argparse.ArgumentParser(description="Score CoG jerk and plot CoG jerk X/Y for every CSV in a joint_analyzer output folder.")
+    parser.add_argument("folder", help="a *_plot_graph_* folder; results are written into it")
+    parser.add_argument("--jerk-ref", type=float, default=120.0, help="reference jerk RMS (default: 120.0)")
+    parser.add_argument("--mapping", default="sigmoid",
+                        choices=["exponential", "sigmoid", "power", "linear_threshold", "tanh"],
+                        help="jerk-to-score mapping (default: sigmoid)")
+    args = parser.parse_args()
+    folder_path = args.folder
+
     # 创建处理器实例
-    processor = JerkProcessor(jerk_ref=120.0, mapping_type="sigmoid")
+    processor = JerkProcessor(jerk_ref=args.jerk_ref, mapping_type=args.mapping)
     
     # 处理文件夹中的CSV文件
     output_file = processor.process_folder(folder_path)

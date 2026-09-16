@@ -1,10 +1,11 @@
+import argparse
 import cv2
 import mediapipe as mp
 import numpy as np
 from datetime import datetime
 import os
 
-class SimpleJointAnalyzer:
+class JointLabeller:
     """
     简化版关节角度分析器
     功能：从视频中提取人体关节位置，并在视频和截图中进行可视化标记。
@@ -151,20 +152,24 @@ class SimpleJointAnalyzer:
 
 def main():
     """
-    示例使用方法
+    为视频生成带关节标记的视频和每 5 帧一张的截图
     """
-    analyzer = SimpleJointAnalyzer()
+    parser = argparse.ArgumentParser(description="Draw MediaPipe joint markers on a video and save screenshots.")
+    parser.add_argument("video", help="input video file")
+    parser.add_argument("--out-dir", help="where to create the <video>_analysis_<timestamp> folder (default: the video's folder)")
+    args = parser.parse_args()
 
-    # 1. 设置视频路径
-    video_path = "E:/Basketball/for_CSCD_publication/sit-shot-2.mp4"  # 请替换为您的视频路径
+    # 1. 视频路径
+    video_path = args.video
 
     if not os.path.exists(video_path):
         print(f"错误: 视频文件不存在于 '{video_path}'")
         return
 
-    # 2. 根据视频文件名和所在路径创建输出主文件夹
-    # 获取视频所在的目录
-    video_parent_dir = os.path.dirname(video_path)
+    analyzer = JointLabeller()
+
+    # 2. 创建输出主文件夹（默认在视频所在目录下）
+    output_root = args.out_dir or os.path.dirname(os.path.abspath(video_path))
     # 获取不带扩展名的视频文件名
     video_base_name = os.path.splitext(os.path.basename(video_path))[0]
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -172,8 +177,7 @@ def main():
     # 新的文件夹名
     new_folder_name = f"{video_base_name}_analysis_{timestamp}"
     
-    # 【关键修改】将新文件夹路径设置在原视频的目录下
-    output_dir = os.path.join(video_parent_dir, new_folder_name)
+    output_dir = os.path.join(output_root, new_folder_name)
 
     # 创建这个主文件夹
     os.makedirs(output_dir, exist_ok=True)

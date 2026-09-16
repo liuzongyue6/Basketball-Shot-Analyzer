@@ -1,0 +1,9 @@
+# MediaPipe 0.10.30 removed the legacy mp.solutions API that the analyzers use.
+mediapipe>=0.10.5,<0.10.30
+opencv-python
+numpy
+pandas
+matplotlib
+scipy
+seaborn
+pillow

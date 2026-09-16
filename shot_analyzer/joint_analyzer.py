@@ -1,3 +1,4 @@
+import argparse
 import cv2
 import mediapipe as mp
 import numpy as np
@@ -630,20 +631,26 @@ def midpoint(p1, p2):
     return (p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2
 
 def main():
-    analyzer = SimpleJointAnalyzer()
-    
-    # --- IMPORTANT: CHANGE THIS PATH TO YOUR VIDEO FILE ---
-    video_path = "E:/Basketball/for_CSCD_publication/lunge-shot-1-simplified.mp4" 
-    
+    parser = argparse.ArgumentParser(description="Kinematic and center-of-gravity analysis of a shooting video.")
+    parser.add_argument("video", help="input video file")
+    parser.add_argument("--out-dir", help="where to create the <video>_plot_graph_<timestamp> folder (default: the video's folder)")
+    parser.add_argument("--no-show", action="store_true", help="save plots without opening a window for each")
+    args = parser.parse_args()
+
+    video_path = args.video
+    show_plot = not args.no_show
+
     if not os.path.exists(video_path):
         print(f"ERROR: Video file not found at '{video_path}'"); return
-    
+
+    analyzer = SimpleJointAnalyzer()
+
     # --- Auto-generate output filenames ---
-    input_dir  = os.path.dirname(video_path)
+    output_root = args.out_dir or os.path.dirname(os.path.abspath(video_path))
     base_name = os.path.splitext(os.path.basename(video_path))[0]
     ts = datetime.now().strftime('%Y%m%d_%H%M%S')
 
-    results_dir = os.path.join(input_dir, f"{base_name}_plot_graph_{ts}")
+    results_dir = os.path.join(output_root, f"{base_name}_plot_graph_{ts}")
     os.makedirs(results_dir, exist_ok=True)
     print(f"Created results directory: {results_dir}")
     
@@ -666,13 +673,13 @@ def main():
 
         # --- Generate and Save All Plots ---
         print("\n--- Generating Plots ---")
-        analyzer.plot_peak_angle_timing(save_path=paths['timing_angle'], show_plot=True)
-        analyzer.plot_peak_acceleration_timing(save_path=paths['timing_accel'], show_plot=True)
-        analyzer.plot_kinetic_chain_timing(save_path=paths['timing_kinetic'], show_plot=True)
-        analyzer.plot_phase_portraits(save_path=paths['phase'], show_plot=True)
-        analyzer.plot_joint_jerks(save_path=paths['jerk'], show_plot=True)
-        analyzer.plot_center_of_gravity_trajectory(save_path=paths['cog_trajectory'], show_plot=True)  # 修改
-        analyzer.plot_center_of_gravity_acceleration_magnitude(save_path=paths['cog_acceleration'], show_plot=True)  # 新增
+        analyzer.plot_peak_angle_timing(save_path=paths['timing_angle'], show_plot=show_plot)
+        analyzer.plot_peak_acceleration_timing(save_path=paths['timing_accel'], show_plot=show_plot)
+        analyzer.plot_kinetic_chain_timing(save_path=paths['timing_kinetic'], show_plot=show_plot)
+        analyzer.plot_phase_portraits(save_path=paths['phase'], show_plot=show_plot)
+        analyzer.plot_joint_jerks(save_path=paths['jerk'], show_plot=show_plot)
+        analyzer.plot_center_of_gravity_trajectory(save_path=paths['cog_trajectory'], show_plot=show_plot)
+        analyzer.plot_center_of_gravity_acceleration_magnitude(save_path=paths['cog_acceleration'], show_plot=show_plot)
         
         # --- Save All Data to a Single CSV File ---
         analyzer.save_data_to_csv(paths['csv'])
