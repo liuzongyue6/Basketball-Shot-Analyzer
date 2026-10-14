@@ -1,3 +1,4 @@
+import argparse
 import os
 from PIL import Image
 
@@ -69,12 +70,15 @@ def crop_images_in_folder(input_folder, crop_width=752, crop_height=842):
 
 
 if __name__ == "__main__":
-    # --- 请在这里设置你的图片文件夹路径 ---
-    target_folder = r"E:\Basketball\for_CSCD_publication\bad-shot-2_analysis_20250903_235431\screenshots"
-    
+    parser = argparse.ArgumentParser(description="Crop every PNG in a folder, keeping the bottom-left corner fixed.")
+    parser.add_argument("folder", help="folder of PNG screenshots; output goes to <folder>/cropped_images")
+    parser.add_argument("--width", type=int, default=752, help="crop width in px (default: 752)")
+    parser.add_argument("--height", type=int, default=842, help="crop height in px (default: 842)")
+    args = parser.parse_args()
+
     # 检查文件夹是否存在
-    if not os.path.isdir(target_folder):
-        print(f"错误: 文件夹路径不存在 -> {target_folder}")
+    if not os.path.isdir(args.folder):
+        print(f"错误: 文件夹路径不存在 -> {args.folder}")
     else:
         # 调用函数开始裁剪
-        crop_images_in_folder(target_folder)
+        crop_images_in_folder(args.folder, crop_width=args.width, crop_height=args.height)

@@ -9,13 +9,12 @@ This project provides tools for analyzing basketball shooting mechanics through 
 ## Features
 
 ### Core Analysis
-- **Pose Detection**: Real-time joint detection using MediaPipe
+- **Pose Detection**: Joint detection using MediaPipe
 - **Biomechanical Analysis**: Joint angle, velocity, acceleration, and jerk calculations
 - **Center of Gravity (CoG) Analysis**: Movement trajectory and acceleration analysis
 - **Kinetic Chain Analysis**: Coordination scoring between hip, knee, and ankle joints
 
 ### Visualization
-- Joint angle progression over time
 - Peak timing analysis for angles and accelerations
 - Phase portraits (velocity vs. angle)
 - Kinetic chain timing visualization
@@ -24,66 +23,100 @@ This project provides tools for analyzing basketball shooting mechanics through 
 
 ### Post-processing Tools
 - Image cropping for screenshot analysis
-- Statistical comparison between different groups/techniques
+- Statistical comparison between groups
 - Jerk magnitude analysis with multiple mapping functions
-- Comprehensive reporting with CSV export
+- Reporting with CSV export
+
+## Project Layout
+
+```
+shot_analyzer/
+├── joint_analyzer.py            # kinematics, CoG analysis, plots, CSV export
+├── joint_labeller.py            # joint-marked video + screenshots
+└── postprocess/
+    ├── image_cropper.py         # crop screenshot folders
+    ├── jerk_analyzer.py         # CoG jerk scoring and X/Y jerk plots
+    └── statistical_analyzer.py  # group A vs. B comparison
+requirements.txt
+```
+
+Videos and generated results belong in a local `data/` folder, which is git-ignored so that recordings of participants are never committed. A suggested layout:
+
+```
+data/
+├── videos/     # input clips
+├── analysis/   # joint_analyzer output folders
+├── labelled/   # joint_labeller output folders
+└── group/      # group-level CSV and plots
+```
 
 ## Installation
 
-### Prerequisites
-- Python 3.7+
-- OpenCV
-- MediaPipe
-- NumPy
-- Pandas
-- Matplotlib
-- Scipy
-- Seaborn
-- Pillow (PIL)
+Requires Python 3.9–3.12 (the MediaPipe versions below have no wheels for newer Python).
 
-### Setup
 ```bash
-pip install opencv-python mediapipe numpy pandas matplotlib scipy seaborn pillow
+pip install -r requirements.txt
 ```
+
+MediaPipe 0.10.30 removed the legacy `mp.solutions` API that both analyzers use, so `requirements.txt` pins `mediapipe<0.10.30`.
+
+Plot titles and labels are in Chinese. Matplotlib looks for SimHei, Microsoft YaHei or Arial Unicode MS; without one of those fonts the labels render as empty boxes.
 
 ## Usage
 
-### 1. Basic Biomechanical Analysis
+Every script takes its input on the command line; run any of them with `--help` for the full options.
+
+### 1. Biomechanical Analysis
+```bash
+python -m shot_analyzer.joint_analyzer data/videos/shot.mp4 --out-dir data/analysis --no-show
+```
+Creates `<video>_plot_graph_<timestamp>/` containing the kinematic CSV and seven plots. Without `--out-dir` the folder is created next to the video; without `--no-show` each plot opens in a window.
+
 ```python
-from biomechanical_analyzer import SimpleJointAnalyzer
+from shot_analyzer.joint_analyzer import SimpleJointAnalyzer
 
 analyzer = SimpleJointAnalyzer()
-video_path = "path/to/your/video.mp4"
-
-# Process video and generate analysis
-analyzer.process_video(video_path)
+analyzer.process_video("path/to/your/video.mp4")
 analyzer._calculate_kinematics_and_average()
 analyzer.analyze_center_of_gravity()
 
-# Generate plots
-analyzer.plot_peak_angle_timing(save_path="angle_timing.png")
-analyzer.plot_kinetic_chain_timing(save_path="kinetic_chain.png")
-analyzer.plot_center_of_gravity_trajectory(save_path="cog_trajectory.png")
-
-# Save data
+analyzer.plot_peak_angle_timing(save_path="angle_timing.png", show_plot=False)
+analyzer.plot_kinetic_chain_timing(save_path="kinetic_chain.png", show_plot=False)
+analyzer.plot_center_of_gravity_trajectory(save_path="cog_trajectory.png", show_plot=False)
 analyzer.save_data_to_csv("analysis_data.csv")
 ```
 
 ### 2. Pose Detection and Joint Marking
-```python
-from pose_detector import SimpleJointAnalyzer
+```bash
+python -m shot_analyzer.joint_labeller data/videos/shot.mp4 --out-dir data/labelled
+```
+Creates `<video>_analysis_<timestamp>/` with a marked video and a screenshot every 5 frames.
 
-detector = SimpleJointAnalyzer()
-detector.process_video_and_capture(
+```python
+from shot_analyzer.joint_labeller import JointLabeller
+
+labeller = JointLabeller()
+labeller.process_video_and_capture(
     video_path="input.mp4",
     output_video_path="marked_video.mp4",
-    screenshot_dir="screenshots/"
+    screenshot_dir="screenshots/",
 )
 ```
 
-### 3. Post-processing Analysis
+### 3. Post-processing
+```bash
+# Crop screenshots (writes <folder>/cropped_images/)
+python -m shot_analyzer.postprocess.image_cropper data/labelled/<run>/screenshots
+
+# Jerk scoring and CoG jerk X/Y plots for a joint_analyzer output folder
+python -m shot_analyzer.postprocess.jerk_analyzer data/analysis/<run> --jerk-ref 120 --mapping sigmoid
+
+# Group A vs. B comparison (box/violin plots + t-tests)
+python -m shot_analyzer.postprocess.statistical_analyzer data/group/shooting_training_data.csv --no-show
+```
+
 ```python
-from postprocess.jerk_analyzer import JerkProcessor
+from shot_analyzer.postprocess.jerk_analyzer import JerkProcessor
 
 processor = JerkProcessor(jerk_ref=120.0, mapping_type="sigmoid")
 processor.process_folder("path/to/csv/files/")
@@ -93,43 +126,43 @@ processor.process_folder("path/to/csv/files/")
 
 ### Core Modules
 
-**`biomechanical_analyzer.py`**
+**`shot_analyzer/joint_analyzer.py`**
 - Main analysis engine for comprehensive biomechanical evaluation
 - Calculates joint kinematics (angles, velocities, accelerations, jerk)
 - Performs center of gravity analysis
 - Generates multiple visualization plots
 - Exports data to CSV format
 
-**`pose_detector.py`**
-- Simplified joint detection and visualization tool
-- Uses MediaPipe for real-time pose estimation
+**`shot_analyzer/joint_labeller.py`**
+- Joint detection and visualization tool
+- Uses MediaPipe for pose estimation
 - Creates marked videos with joint annotations
 - Generates screenshot sequences for detailed analysis
 
 ### Post-processing Tools
 
-**`postprocess/jerk_analyzer.py`**
+**`shot_analyzer/postprocess/jerk_analyzer.py`**
 - Analyzes jerk magnitude for movement smoothness evaluation
-- Calculates Kinetic Chain Coordination Score (KCSS)
-- Supports multiple mapping functions (exponential, sigmoid, power)
-- Generates comprehensive analysis reports
+- Maps jerk RMS to a 0–1 score (exponential, sigmoid, power, linear_threshold, tanh)
+- Plots CoG jerk X and Y components
+- Generates analysis reports
 
-**`postprocess/image_cropper.py`**
-- Utility for cropping screenshot images to specific dimensions
+**`shot_analyzer/postprocess/image_cropper.py`**
+- Crops screenshot images to a fixed size, keeping the bottom-left corner
 - Maintains consistent image regions for comparative analysis
-- Batch processing capabilities
+- Batch processes a whole folder
 
-**`postprocess/statistical_analyzer.py`**
-- Statistical comparison tools for group analysis
-- T-test implementations for significance testing
-- Visualization of group differences using box plots and violin plots
+**`shot_analyzer/postprocess/statistical_analyzer.py`**
+- Statistical comparison of CGSS and KCSS improvement between two groups
+- Independent-samples t-tests
+- Box plots and violin plots of group differences
 
 ## Output Files
 
 ### Analysis Results
 - **CSV Data**: Complete kinematic data with timestamps
-- **Plot Images**: Multiple PNG files showing different analysis aspects
-- **Analysis Reports**: Text files with statistical summaries
+- **Plot Images**: PNG files showing different analysis aspects
+- **Analysis Reports**: Text files with jerk scoring summaries
 
 ### Generated Plots
 1. **Peak Angle Timing**: Shows sequence and timing of joint peak angles
@@ -150,8 +183,8 @@ processor.process_folder("path/to/csv/files/")
 
 ### Coordination Metrics
 - **KCSS (Kinetic Chain Coordination Score)**: Measures hip-knee-ankle coordination
+- **CGSS (Center of Gravity Smoothness Score)**: CoG jerk mapped to a 0–1 score
 - **Peak Timing Sequence**: Order and timing of joint peak activations
-- **Delay Analysis**: Time delays between joint activations
 
 ### Center of Gravity Analysis
 - **Trajectory**: 2D path of body's center of mass
@@ -170,7 +203,6 @@ processor.process_folder("path/to/csv/files/")
 ### Research
 - Biomechanical studies of basketball shooting
 - Movement efficiency analysis
-- Injury prevention research
 - Performance optimization studies
 
 ## Technical Notes
@@ -190,10 +222,11 @@ processor.process_folder("path/to/csv/files/")
 ## Troubleshooting
 
 ### Common Issues
-1. **Video not loading**: Check file path and format compatibility
-2. **Poor pose detection**: Ensure good lighting and clear view of subject
-3. **Missing joint data**: Verify subject is fully visible in frame
-4. **Memory issues**: Process shorter video segments for large files
+1. **`module 'mediapipe' has no attribute 'solutions'`**: MediaPipe is 0.10.30 or newer; reinstall with `pip install -r requirements.txt`
+2. **Video not loading**: Check file path and format compatibility
+3. **Poor pose detection**: Ensure good lighting and clear view of subject
+4. **Missing joint data**: Verify subject is fully visible in frame
+5. **Memory issues**: Process shorter video segments for large files
 
 ### Performance Tips
 - Use videos with clear subject visibility
@@ -212,6 +245,7 @@ When contributing to this project:
 2. Document new features thoroughly
 3. Include example usage in docstrings
 4. Test with sample video data
+5. Never commit videos of participants or generated results
 
 ## Contact
 
